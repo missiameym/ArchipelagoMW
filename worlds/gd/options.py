@@ -15,6 +15,7 @@ class MinDiff(Choice):
 class LevelAmount(Range):
 	"""
 	Set the maximum amount of levels that you can unlock.
+	HAS TO BE LARGER THAN GOAL AMOUNT.
 	"""
 	display_name = "Level Amount"
 	range_start = 1

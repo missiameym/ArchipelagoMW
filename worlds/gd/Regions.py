@@ -1,11 +1,12 @@
 from BaseClasses import Region, Entrance, Location, Item, ItemClassification
+from worlds.gd import GDItem
 
 
-def connect_regions(world, from_name: str, to_name: str, entrance_name: str, level_number) -> Entrance:
+def connect_regions(world, from_name: str, to_name: str, entrance_name: str, i) -> Entrance:
     entrance_region = world.get_region(from_name)
     exit_region = world.get_region(to_name)
     entrance = entrance_region.connect(exit_region, entrance_name)
-    entrance.access_rule = lambda state: state.has(f"Progressive Level { level_number + 1 }", world.player)
+    entrance.access_rule = lambda state, level=i + 1: state.has(f"Progressive Level { level }", world.player)
     return entrance
 
 
@@ -18,20 +19,22 @@ def create_gd_regions(world):
         percentage_per_check = 100 // world.options.checks_per_level
 
         for j in range(world.options.checks_per_level):
+            location_name = f"Level { i + 1 } - {percentage_per_check * (j + 1)}% Complete"
             location = Location(
                 world.player,
-                f"Level { i + 1 } - {percentage_per_check * (j + 1)}% Complete",
-                0x100 + i * 100 + percentage_per_check // 5,
+                location_name,
+                world.location_name_to_id[location_name],
                 region
             )
+
+            location.access_rule = lambda state, level=i + 1, check=j + 1: state.has(f"Progressive Level { level }", world.player, check)
             region.locations.append(location)
-            location.access_rule = lambda state: state.has(f"Progressive Level { i + 1 }", world.player, j+1)
 
 
         event_location = Location(world.player, f"Level { i + 1 } Complete", None, region)
+        event_location.access_rule = lambda state, level=i + 1: state.has(f"Progressive Level { level }", world.player, world.options.checks_per_level)
         region.locations.append(event_location)
-        event_location.access_rule = lambda state: state.has(f"Progressive Level { i + 1 }", world.player, world.options.checks_per_level)
-        event_location.place_locked_item(Item("Level Complete", ItemClassification.progression, None, world.player))
+        event_location.place_locked_item(GDItem("Level Complete", ItemClassification.progression, None, world.player))
 
         world.multiworld.regions.append(region)
         connect_regions(world, "Menu", f"Level { i + 1 }", f"Menu -> Level { i + 1 }", i)
